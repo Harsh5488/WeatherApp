@@ -49,9 +49,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private WeatherModelAdapter weatherModelAdapter;
     private FavCityAdapter favCityAdapter;
     private int PERMISSION_CODE = 1;
-    private String cityName;
-    //    double lat, lon;
-    double lat = 26.9123584, lon = 75.743232;
+    double lat, lon;
     private LocationManager locationManager;
     private Location location;
     String apiKey = "fc853b4d52b5b246574b3f6ff1f63387";
@@ -71,8 +69,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
         progressBar = findViewById(R.id.pBarLoading);
         rLHome = findViewById(R.id.RLHome);
         textCityName = findViewById(R.id.textCityName);
@@ -87,8 +83,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         editCityName = findViewById(R.id.editCityName);
         textWindSpeed = findViewById(R.id.textWindSpeed);
         textLastTime = findViewById(R.id.textLastTime);
-
-//        imgBG.setImageResource(R.drawable.night);
 
         arr = new ArrayList<>();
         favArr = new ArrayList<>();
@@ -117,8 +111,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         favCityAdapter = new FavCityAdapter(this,favArr);
         rvFavs.setAdapter(favCityAdapter);
 
-        for(int i=2;i<saveKey.length;i++){
-            getFavCoord(saveKey[i],i);
+        boolean isInternetAvailable = NetworkCheck.isNetworkAvailable(getApplicationContext());
+        if(isInternetAvailable){
+            for(int i=2;i<saveKey.length;i++){
+                getFavCoord(saveKey[i],i);
+            }
+        }
+        else{
+            Toast.makeText(MainActivity.this,"No Internet Connection",Toast.LENGTH_SHORT).show();
+            for (int i=0;i<saveKey.length;i++) {
+                retrieveLastResponse(i);
+            }
         }
 
         imgSearch.setOnClickListener(new View.OnClickListener() {
@@ -264,6 +267,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             double wSpeed = response.getJSONObject("wind")
                     .getDouble("speed");
             textWindSpeed.setText(""+wSpeed+"Km/h");
+
+            if(img.charAt(img.length()-1) == 'd')
+                imgBG.setImageResource(R.drawable.day);
+            if(img.charAt(img.length()-1) == 'n')
+                imgBG.setImageResource(R.drawable.night);
         }catch (Exception e){
             Log.d("Update Res",e.getMessage());
         }
@@ -362,13 +370,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        for (int i=0;i<saveKey.length;i++) {
-            retrieveLastResponse(i);
-        }
-    }
 
     private void retrieveLastResponse(int time) {
         SharedPreferences sharedPreferences = getSharedPreferences("WeatherData", Context.MODE_PRIVATE);
